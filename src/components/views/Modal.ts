@@ -3,63 +3,42 @@ import { ensureElement } from "../../utils/utils";
 import { IEvents } from "../base/events";
 
 interface IModalData {
-  content: HTMLElement | null; // данные - это сами клонированные шаблоны <template>
+  content: HTMLElement;
 }
 
-// Класс, управляющий модальным окном (открытие, закрытие, вставка контента, события)
 export class Modal extends Component<IModalData> {
-  protected closeButton: HTMLButtonElement; // кнопка закрытия
-  protected contentContainer: HTMLElement; // контейнер для контента (div.modal__content внутри div.modal-container)
+  protected _closeButton: HTMLButtonElement;
+  protected _content: HTMLElement;
 
-  // В container конструктор принимает весь DOM-контейнер #modal-container  
   constructor(container: HTMLElement, protected events: IEvents) {
     super(container);
 
-    this.closeButton = ensureElement<HTMLButtonElement>(
-      '.modal__close',
-      container
-    );
+    this._closeButton = ensureElement<HTMLButtonElement>('.modal__close', container);
+    this._content = ensureElement<HTMLElement>('.modal__content', container);
 
-    this.contentContainer = ensureElement<HTMLElement>(
-      '.modal__content',
-      container
-    );
-
-    // клик по кнопке закрытия
-    this.closeButton.addEventListener('click', this.close.bind(this));
-
-    // клик по фону закрывает модалку
-    this.container.addEventListener('click', (e) => {
-      // если клик не внутри .modal__container, закрываем
-      if (!(e.target as HTMLElement).closest('.modal__container')) { 
-        // внутренняя оболочка модалки, используется только в обработчике клика
-        this.close();
-      }
-    });
-
-    // клик внутри контента не закрывает модалку
-    this.contentContainer.addEventListener('click', (e) => e.stopPropagation());
+    this._closeButton.addEventListener('click', this.close.bind(this));
+    this.container.addEventListener('click', this.close.bind(this));
+    this._content.addEventListener('click', (event) => event.stopPropagation());
   }
 
-  // открыть модалку
+  set content(value: HTMLElement) {
+    this._content.replaceChildren(value);
+  }
+
   open() {
-    this.toggleClass(this.container, 'modal_active', true);
+    this.container.classList.add('modal_active');
     this.events.emit('modal:open');
   }
 
-  // закрыть модалку
   close() {
-    this.toggleClass(this.container, 'modal_active', false);
-    this.content = null; // очищаем контент
+    this.container.classList.remove('modal_active');
+    this.content = null;
     this.events.emit('modal:close');
   }
 
-  // вставка/очистка содержимого
-  set content(element: HTMLElement | null) {
-    if (element) {
-      this.contentContainer.replaceChildren(element);
-    } else {
-      this.contentContainer.replaceChildren();
-    }
+  render(data: IModalData): HTMLElement {
+    super.render(data);
+    this.open();
+    return this.container;
   }
 }

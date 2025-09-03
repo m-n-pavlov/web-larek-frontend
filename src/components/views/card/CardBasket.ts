@@ -1,48 +1,31 @@
-import { TCardData, Card } from "./Card";
+import { Card } from "./Card";
+import { TCardBasket } from "../../../types";
 import { ensureElement } from "../../../utils/utils";
-import { IProduct } from "../../../types";
-import { IEvents } from "../../base/events";
+import { ICardActions } from "./Card";
 
-export type TCardBasket = TCardData & Pick<IProduct, 'id'>; // title, price + расширяю id
+export interface ICardBasketActions extends ICardActions {
+  onDeleteClick?: (id: string) => void;
+}
 
 export class CardBasket extends Card<TCardBasket> {
-  protected id: string;
-  protected deleteButton: HTMLButtonElement;
-  protected indexElement: HTMLElement;
+  protected _index: HTMLElement;
+  protected _button: HTMLButtonElement;
 
-  constructor(
-    container: HTMLElement,
-    events: IEvents,
-    data?: TCardBasket
-  ) {
-    super(container);
+  constructor(container: HTMLElement, actions?: ICardBasketActions) {
+    super(container, {});
 
-    this.id = data?.id ?? '';
+    this._index = ensureElement<HTMLElement>('.basket__item-index', this.container);
+    this._button = ensureElement<HTMLButtonElement>('.basket__item-delete', this.container);
 
-    this.deleteButton =
-      ensureElement<HTMLButtonElement>('.basket__item-delete', this.container);
-
-    this.indexElement =
-      ensureElement<HTMLElement>('.basket__item-index', this.container);
-
-    this.deleteButton.addEventListener('click', () => {
-      events.emit('basket:remove', { id: this.id });
-    });
+    if (actions?.onDeleteClick) {
+      this._button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        actions.onDeleteClick?.(this.id);
+      });
+    }
   }
 
-  // сеттер для индекса карточки
   set index(value: number) {
-    this.indexElement.textContent = String(value);
-  }
-
-  // геттер для индекса карточки
-  get index(): number {
-    const text = this.indexElement.textContent;
-    return text ? Number(text) : 0;
-  }
-
-  // геттер для внутреннего id карточки
-  get cardId(): string {
-    return this.id;
+    this.setText(this._index, value);
   }
 }

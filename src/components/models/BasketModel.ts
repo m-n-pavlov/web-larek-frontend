@@ -1,49 +1,57 @@
-import { IEvents } from '../base/events';
-import { IBasketModel, TCartData } from '../../types';
+import { Model } from "../base/Model";
+import { IEvents } from "../base/events";
+import { IBasketModel } from "../../types";
+import { TCardBasket } from "../../types";
 
-export class BasketModel implements IBasketModel {
-	items: TCartData[] = [];
+export class BasketModel extends Model<IBasketModel> implements IBasketModel {
+  items: TCardBasket[];
 
-	private events: IEvents;
+  constructor(data: Partial<IBasketModel>, events: IEvents) {
+    super(data, events);
+    this.items = data?.items ?? [];
+  }
 
-	constructor(initial: Partial<IBasketModel> = {}, events: IEvents) {
-		this.items = initial.items || [];
-		this.events = events;
-	}
+  addItem(item: TCardBasket): void {
+    if (this.containsItem(item.id)) {
+      return;
+    }
 
-	addItem(item: TCartData) {
-		if (!this.containsItem(item.id)) {
-			this.items.push(item);
-			this.events.emit('basket:updated', { items: this.items });
-			this.events.emit('basket:count', { count: this.getCount() });
-		}
-	}
+    this.items.push({ ...item });
+    this.emitChanges('basket:items:updated', { items: this.getItems() });
+  }
 
-	removeItem(itemId: string) {
-		this.items = this.items.filter(i => i.id !== itemId);
-		this.events.emit('basket:updated', { items: this.items });
-		this.events.emit('basket:count', { count: this.getCount() });
-	}
+  removeItem(itemId: string): void {
+    const initialLength = this.items.length;
+    this.items = this.items.filter(i => i.id !== itemId);
 
-	containsItem(itemId: string): boolean {
-		return this.items.some(i => i.id === itemId);
-	}
+    if (this.items.length === initialLength) {
+      return;
+    }
 
-	getItems(): TCartData[] {
-		return [...this.items];
-	}
+    this.emitChanges('basket:items:updated', { items: this.getItems() });
+  }
 
-	getCount(): number {
-		return this.items.length;
-	}
+  getCount(): number {
+    return this.items.length;
+  }
 
-	getTotal(): number {
-		return this.items.reduce((sum, i) => sum + (i.price || 0), 0);
-	}
+  getItems(): TCardBasket[] {
+    return this.items.map(i => ({ ...i }));
+  }
 
-	clearItems() {
-		this.items = [];
-		this.events.emit('basket:updated', { items: this.items });
-		this.events.emit('basket:count', { count: 0 });
-	}
+  getTotal(): number {
+    return this.items.reduce((sum, it) => sum + (it.price ?? 0), 0);
+  }
+
+  containsItem(itemId: string): boolean {
+    return this.items.some(i => i.id === itemId);
+  }
+
+  clearItems(): void {
+    if (this.items.length === 0) return;
+
+    this.items = [];
+    this.emitChanges('basket:items:cleared', {});
+    this.emitChanges('basket:items:updated', { items: this.getItems() });
+  }
 }

@@ -1,107 +1,59 @@
-import { IEvents } from '../../base/events';
-import { TCartData } from '../../../types';
-import { handlePrice } from '../../../utils/utils';
+import { Card } from "./Card";
+import { TCardPreview } from "../../../types";
+import { ensureElement } from "../../../utils/utils";
+import { ICardActions, CategoryKey } from "./Card";
+import { categoryMap } from "../../../utils/constants";
 
-export type ICardPreviewData = TCartData & { inBasket?: boolean };
+export interface ICardPreviewActions extends ICardActions {
+  onButtonClick?: (id: string) => void;
+}
 
-export class CardPreview {
-  element: HTMLElement;
-  private events: IEvents;
-  private data: ICardPreviewData;
+export class CardPreview extends Card<TCardPreview> {
+  protected _image: HTMLImageElement;
+  protected _category: HTMLElement;
+  protected _description: HTMLElement;
+  protected _button: HTMLButtonElement;
 
-  public onAddToBasket: () => void = () => {};
-  public onRemoveFromBasket: () => void = () => {};
+  public inBasket: boolean = false;
 
-  constructor(
-    template: HTMLElement,
-    events: IEvents,
-    data: ICardPreviewData
-  ) {
-    this.element = template;
-    this.events = events;
-    this.data = { ...data, inBasket: !!data.inBasket };
-    this.bindUI();
+  constructor(container: HTMLElement, actions?: ICardPreviewActions) {
+    super(container, {});
 
-    // Применяем стартовые значения (текст/disabled кнопки и т.д.)
-    this.applyPriceState(this.data.price);
-    this.setInBasket(this.data.inBasket === true);
-  }
+    this._image = ensureElement<HTMLImageElement>('.card__image', this.container);
+    this._category = ensureElement<HTMLElement>('.card__category', this.container);
+    this._description = ensureElement<HTMLElement>('.card__text', this.container);
+    this._button = ensureElement<HTMLButtonElement>('.card__button', this.container);
 
-  private bindUI() {
-    const actionBtn = this.element.querySelector<HTMLButtonElement>('.button');
-    if (actionBtn) {
-      actionBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        // Если товар бесценный — не делаем никаких действий
-        if (this.data.price === null) return;
-
-        if (this.data.inBasket) {
-          this.onRemoveFromBasket();
-          this.setInBasket(false);
-        } else {
-          this.onAddToBasket();
-          this.setInBasket(true);
-        }
+    if (actions?.onButtonClick) {
+      this._button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        actions.onButtonClick?.(this.id);
       });
     }
   }
 
-  set title(v: string) {
-    const el = this.element.querySelector<HTMLElement>('.card__title');
-    if (el) el.textContent = v;
+  set image(value: string) {
+    this.setImage(this._image, value, this.title);
   }
 
-  set price(v: number | null) {
-    const el = this.element.querySelector<HTMLElement>('.card__price');
-    if (!el) return;
-    el.textContent = v !== null ? handlePrice(v) + ' синапсов' : 'Бесценно';
-    this.data.price = v;
-    this.applyPriceState(v);
+  set description(value: string) {
+    this.setText(this._description, value);
   }
 
-  set category(v: string) {
-    const el = this.element.querySelector<HTMLElement>('.card__category');
-    if (el) el.textContent = v;
-  }
+  set category(value: string) {
+    this.setText(this._category, value);
 
-  set description(v: string) {
-    const el = this.element.querySelector<HTMLElement>('.card__text');
-    if (el) el.textContent = v;
-  }
-
-  set image(v: string) {
-    const img = this.element.querySelector<HTMLImageElement>('img');
-    if (img) img.src = v;
-  }
-
-  // Применяет поведение кнопки в зависимости от цены
-  private applyPriceState(price: number | null) {
-    const actionBtn = this.element.querySelector<HTMLButtonElement>('.button');
-    if (!actionBtn) return;
-
-    if (price === null) {
-      // товар бесценный — блокируем кнопку
-      actionBtn.disabled = true;
-      return;
+    for (const key in categoryMap) {
+      this._category.classList.toggle(categoryMap[key as CategoryKey], key === value);
     }
-
-    // товар с ценой — включаем кнопку и ставим текст в соответствии с состоянием
-    actionBtn.disabled = false;
-    actionBtn.textContent = this.data.inBasket ? 'Удалить из корзины' : 'В корзину';
   }
 
-  setInBasket(flag: boolean) {
-    this.data.inBasket = flag;
-    const actionBtn = this.element.querySelector<HTMLButtonElement>('.button');
-    if (!actionBtn) return;
-
-    if (this.data.price === null) return;
-
-    actionBtn.textContent = flag ? 'Удалить из корзины' : 'В корзину';
-    actionBtn.classList.toggle('button_in-basket', flag);
+  set price(value: number | null) {
+    super.price = value;
+    this.setDisabled(this._button, value === null);
   }
 
-  set inBasket(flag: boolean) {
-    this.setInBasket(flag);
+  public updateButtonText() {
+    this._button.textContent = this.inBasket ? 'Удалить из корзины' : 'Купить';
   }
 }

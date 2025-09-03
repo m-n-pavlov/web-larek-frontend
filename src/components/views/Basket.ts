@@ -1,53 +1,54 @@
 import { Component } from "../base/Component";
-import { ensureElement, handlePrice, createElement } from "../../utils/utils";
 import { IEvents } from "../base/events";
-import { CardBasket } from "./card/CardBasket";
+import { ensureElement, createElement, handlePrice } from "../../utils/utils";
 
 interface IBasket {
-  basketItems: CardBasket[];
-  basketPrice: number;
+  items: HTMLElement[];
+  total: number;
 }
 
 export class Basket extends Component<IBasket> {
-  protected basketItem: HTMLElement;
-  protected basketPrice: HTMLElement;
-  protected basketButton: HTMLButtonElement;
+  protected _list: HTMLElement;
+  protected _total: HTMLElement;
+  protected _button: HTMLButtonElement;
 
   constructor(container: HTMLElement, protected events: IEvents) {
     super(container);
 
-    this.basketItem = ensureElement<HTMLElement>('.basket__list', this.container);
-    this.basketPrice = ensureElement<HTMLElement>('.basket__price', this.container);
-    this.basketButton = ensureElement<HTMLButtonElement>('.basket__button', this.container);
+    this._list = ensureElement<HTMLElement>('.basket__list', this.container);
+    this._total = this.container.querySelector('.basket__price');
+    this._button = this.container.querySelector('.basket__button');
 
-    this.basketButton.addEventListener('click', () => {
-      this.events.emit('basket:go-to-order-step');
-    });
-  }
-
-  // Сеттер для общей стоимости товаров
-  set price(price: number) {
-    this.setText(
-      this.basketPrice,
-      handlePrice(price) + ' синапсов'
-    );
-  }
-
-  // Сеттер для элементов корзины
-  set items(items: HTMLElement[]) {
-    if (items.length) {
-      // Если есть элементы — отображаем их
-      this.basketItem.replaceChildren(...items);
-    } else {
-      // Если корзина пуста — показываем сообщение
-      const emptyMessage = createElement('p', { textContent: 'Корзина пуста' });
-      this.basketItem.replaceChildren(emptyMessage);
+    if (this._button) {
+      this._button.addEventListener('click', () => {
+        events.emit('basket:go-to-order-step');
+      });
     }
 
-    this.basketButton.disabled = items.length === 0;
+    this.items = [];
   }
 
-  get element(): HTMLElement {
-    return this.container;
+  set items(items: HTMLElement[]) {
+    if (items.length) {
+      this._list.replaceChildren(...items);
+    } else {
+      this._list.replaceChildren(
+        createElement<HTMLParagraphElement>('p', {
+          textContent: 'Корзина пуста'
+        })
+      );
+    }
+  }
+
+  set selected(items: string[]) {
+    if (items.length) {
+      this.setDisabled(this._button, false);
+    } else {
+      this.setDisabled(this._button, true);
+    }
+  }
+
+  set total(total: number) {
+    this.setText(this._total, handlePrice(total) + ' синапсов');
   }
 }

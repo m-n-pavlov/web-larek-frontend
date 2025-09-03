@@ -14,7 +14,7 @@ export interface IOrderResponse {
   total: number;
 }
 
-// Данные для приложения, тип категорий товара
+// Тип категорий товара
 export type CategoryType =
   | 'другое'
   | 'софт-скил'
@@ -22,7 +22,7 @@ export type CategoryType =
   | 'кнопка'
   | 'хард-скил';
 
-// Внутренние данные приложения, интерфейс с типом данных ТОВАР
+// Интерфейс данных товара
 export interface IProduct {
   id: string; // уникальный id товара
   title: string; // название товара
@@ -32,47 +32,48 @@ export interface IProduct {
   price: number | null; // number (цена в синапсах) или null ("Бесценно")
 }
 
-// Внутренние данные приложения, интерфейс с типом данных ПОКУПАТЕЛЬ
+// Интерфейс данных покупателя
 export interface ICustomer {
-  payment: 'card' | 'cash' | ""; // метод оплаты ("" - состояние по умолчанию, когда выбор не сделан)
-  address: string; // адрес доставки
-  email: string; // email покупателя
-  phone: string; // телефон покупателя
+  payment: 'card' | 'cash' | "";
+  address: string;
+  email: string;
+  phone: string;
 }
 
-// Вспомогательные типы для слоя модели данных
-export type TProductPreview = Omit<IProduct, 'description'>; // данные товара в каталоге
-export type TProductDetails = IProduct; // данные товара в превью
-export type TCartData = Pick<IProduct, 'id' | 'title' | 'price'>; // данные товара в корзине
-export type FormErrors = Partial<Record<keyof ICustomer, string>>; // тип для хранения ошибок в формах
+// Интерфейс данных заказа (для использования в моделях данных)
+export interface IPostOrder extends ICustomer {
+  total: number;
+  items: string[];
+}
 
-// Интерфейс компонента модели КАТАЛОГ
+// Вспомогательные типы для карточки товара
+export type TCard = Pick<IProduct, 'title' | 'price'>; // данные товара в базовом классе карточки
+export type TCardCatalog = Omit<IProduct, 'description'>; // данные товара в каталоге
+export type TCardPreview = IProduct; // данные товара в превью
+export type TCardBasket = Pick<IProduct, 'id' | 'title' | 'price'>; // данные товара в корзине
+
+// Вспомогательные типы для форм
+export type TFormOrder = Pick<ICustomer, 'payment' | 'address'>; // форма с выбором способа оплаты и вводом адреса
+export type TFormContacts = Pick<ICustomer, 'email' | 'phone'>; // форма с вводом почты и телефона
+
+// Вспомогательный тип для хранения ошибок в формах
+export type TFormErrors = Partial<Record<keyof TFormOrder | keyof TFormContacts, string>>; // тип для хранения ошибок в формах
+
+// Интерфейс модели данных каталога
 export interface ICatalogModel {
   products: IProduct[]; // хранит массив всех товаров из API
   selectedProduct: string | null; // хранит id выбранного товара
-  getProducts(): TProductPreview[]; // получить массив товаров для каталога (без description)
-  setProducts(products: IProduct[]): void; // сохранить массив товаров
-  getSelectedProduct(): TProductDetails | null; // получить конкретный товар по id
-  setSelectedProduct(id: string | null): void; // сохранить id выбранного товара
 }
 
-// Интерфейс компонента модели КОРЗИНА
+// Интерфейс модели данных корзины
 export interface IBasketModel {
-  items: TCartData[]; // массив товаров в корзине (title и price - для отображения, id - для логики)
-  addItem(item: TCartData): void; // добавить товар в корзину
-  removeItem(itemId: string): void; // удалить товар из корзины
-  getCount(): number; // получить количество товаров в корзине
-  getItems(): TCartData[]; // получить список товаров в корзине
-  getTotal(): number; // получить общую стоимость товаров в корзине
-  containsItem(itemId: string): boolean; // проверить, есть ли товар в корзине по ID
-  clearItems(): void; // очистить корзину
+  items: TCardBasket[]; // массив товаров в корзине (title и price - для отображения, id - для логики)
 }
 
-// Интерфейс компонента модели ПОКУПАТЕЛЬ
-export interface ICustomerModel {
+// Интерфейс модели данных заказа
+export interface IOrderModel {
   customer: ICustomer; // хранит объект данных покупателя
-  getCustomerData(): ICustomer; // получить объект данных покупателя
-  setCustomerData(customerData: Partial<ICustomer>): void; // сохранить/обновить объект данных покупателя
-  validateCustomerData(step: 'shipping' | 'contacts'): boolean; // проверить корректность данных покупателя
-  clearCustomerData(): void; // очистить данные покупателя
+  items: string[]; // id выбранных товаров
+  total: number; // сумма корзины
+  formErrors: TFormErrors; // ошибки в форме
 }

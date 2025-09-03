@@ -2,28 +2,20 @@ import { Component } from "../../base/Component";
 import { IEvents } from "../../base/events";
 import { ensureElement } from "../../../utils/utils";
 
-// Интерфейс состояния формы
 interface IFormState {
-  valid: boolean;   // флаг, указывающий, валидна ли форма
-  errors: string[]; // массив ошибок для отображения пользователю
+  valid: boolean;
+  errors: string[];
 }
 
-// Класс абстрактной формы
 export class Form<T> extends Component<IFormState> {
-  protected submitButton: HTMLButtonElement;
-  protected errorsElement: HTMLElement;
+  protected _submit: HTMLButtonElement;
+  protected _errors: HTMLElement;
 
-  constructor(
-    protected container: HTMLFormElement,
-    protected events: IEvents
-  ) {
+  constructor(protected container: HTMLFormElement, protected events: IEvents) {
     super(container);
 
-    this.submitButton =
-      ensureElement<HTMLButtonElement>('button[type=submit]', this.container);
-
-    this.errorsElement =
-      ensureElement<HTMLElement>('.form__errors', this.container);
+    this._submit = ensureElement<HTMLButtonElement>('button[type=submit]', this.container);
+    this._errors = ensureElement<HTMLElement>('.form__errors', this.container);
 
     this.container.addEventListener('input', (e: Event) => {
       const target = e.target as HTMLInputElement;
@@ -39,18 +31,18 @@ export class Form<T> extends Component<IFormState> {
   }
 
   protected onInputChange(field: keyof T, value: string) {
-    this.events.emit('orderInput:change', {
+    this.events.emit(`${this.container.name}.${String(field)}:change`, {
       field,
-      value,
+      value
     });
   }
 
   set valid(value: boolean) {
-    this.submitButton.disabled = !value;
+    this._submit.disabled = !value;
   }
 
   set errors(value: string) {
-    this.setText(this.errorsElement, value);
+    this.setText(this._errors, value);
   }
 
   render(state: Partial<T> & IFormState) {

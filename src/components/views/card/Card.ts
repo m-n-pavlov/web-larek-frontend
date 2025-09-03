@@ -1,73 +1,49 @@
-import { categoryMap } from '../../../utils/constants';
-import { IProduct } from '../../../types';
-import { Component } from '../../base/Component';
-import { ensureElement, handlePrice } from '../../../utils/utils';
+import { Component } from "../../base/Component";
+import { TCard } from "../../../types";
+import { ensureElement, handlePrice } from "../../../utils/utils";
+import { categoryMap } from "../../../utils/constants";
 
 export type CategoryKey = keyof typeof categoryMap;
 
-// Интерфейс колбэков карточки товара
 export interface ICardActions {
-  onClick: () => void;
+  onCardClick?: (event: MouseEvent) => void;
 }
 
-// Тип данных карточки товара (только общие поля для всех карточек)
-export type TCardData = Pick<IProduct, 'title' | 'price'>; // title и price
+export abstract class Card<T extends TCard> extends Component<T> {
+  protected _title: HTMLElement;
+  protected _price: HTMLElement;
 
-// Базовый класс карточки товара
-export abstract class Card<T extends TCardData> extends Component<T> {
-  protected titleElement: HTMLElement;
-  protected priceElement: HTMLElement;
-
-  constructor(
-    container: HTMLElement,
-    actions?: ICardActions
-  ) {
+  constructor(container: HTMLElement, actions?: ICardActions) {
     super(container);
 
-    // Поиск основных элементов внутри контейнера карточки
-    this.titleElement =
-      ensureElement<HTMLElement>('.card__title', this.container);
+    this._title = ensureElement<HTMLElement>('.card__title', this.container);
+    this._price = ensureElement<HTMLElement>('.card__price', this.container);
 
-    this.priceElement =
-      ensureElement<HTMLElement>('.card__price', this.container);
-
-    // Привязка обработчика клика
-    if (actions?.onClick) {
-      this.container.addEventListener('click', actions.onClick);
+    if (actions?.onCardClick) {
+      this.container.addEventListener('click', actions.onCardClick);
     }
   }
 
-  // обновляет текст заголовка в DOM
-  set title(value: string) {
-    this.setText(this.titleElement, value);
+  set id(value: string) {
+    this.container.dataset.id = value;
   }
 
-  // обновляет текст цены в DOM
+  get id(): string {
+    return this.container.dataset.id || '';
+  }
+
+  set title(value: string) {
+    this.setText(this._title, value);
+  }
+
+  get title(): string {
+    return this._title.textContent || '';
+  }
+
   set price(value: number | null) {
     this.setText(
-      this.priceElement,
+      this._price,
       value !== null ? handlePrice(value) + ' синапсов' : 'Бесценно'
     );
-  }
-
-  // возвращает текущий текст заголовка
-  get title(): string {
-    return this.titleElement.textContent || '';
-  }
-
-  // возвращает число из текста цены или null
-  get price(): number | null {
-    const text = this.priceElement.textContent?.trim();
-    if (!text || text === 'Бесценно') {
-      return null;
-    }
-
-    const match = text.match(/\d+/); // извлекаем число
-    return match ? Number(match[0]) : null;
-  }
-
-  // возвращает DOM-элемент карточки
-  get element(): HTMLElement {
-    return this.container;
   }
 }
