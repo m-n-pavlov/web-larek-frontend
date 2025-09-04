@@ -47,7 +47,7 @@ const modal = new Modal(ensureElement<HTMLElement>('#modal-container'), events);
 const basketView = new Basket(cloneTemplate(basketTemplate), events);
 basketView.items = [];
 basketView.total = 0;
-basketView.selected = [];
+basketView.selected = false;
 
 const formOrder = new FormOrder(cloneTemplate(orderTemplate) as HTMLFormElement, events);
 const formContacts = new FormContacts(cloneTemplate(contactsTemplate) as HTMLFormElement, events);
@@ -132,14 +132,14 @@ events.on<{ items: TCardBasket[] }>('basket:items:updated', (data) => {
 
   basketView.total = basketModel.getTotal();
   page.counter = basketModel.getCount();
-  basketView.selected = items.map(i => i.id);
+  basketView.selected = items.length > 0;
 });
 
 events.on('basket:items:cleared', () => {
   basketView.items = [];
   basketView.total = 0;
   page.counter = 0;
-  basketView.selected = [];
+  basketView.selected = false;
 });
 
 events.on('basket:open', () => {
@@ -157,11 +157,6 @@ events.on('basket:go-to-order-step', () => {
 // ✅ Заказ
 // ---------------------------
 events.on('order:open', (payload?: { items?: string[]; total?: number }) => {
-  if (payload) {
-    orderModel.setItems(payload.items ?? []);
-    orderModel.setTotal(payload.total ?? 0);
-  }
-
   orderModel.setCustomerData({ email: '', phone: '' } as Partial<ContactsData>, 'contacts');
 
   modal.render({
@@ -226,7 +221,10 @@ events.on('contacts:open', () => {
 events.on('contacts:submit', () => {
   if (!orderModel.validateCustomerData('contacts')) return;
 
-  const payload = orderModel.getOrderData() as IOrderRequest;
+  const payload = orderModel.getOrderData(
+    basketModel.getItems().map(i => i.id),
+    basketModel.getTotal()
+  ) as IOrderRequest;
 
   api.postOrder(payload)
     .then(result => {

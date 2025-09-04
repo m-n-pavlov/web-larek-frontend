@@ -73,7 +73,5 @@ export interface IBasketModel {
 // Интерфейс модели данных заказа
 export interface IOrderModel {
   customer: ICustomer; // хранит объект данных покупателя
-  items: string[]; // id выбранных товаров
-  total: number; // сумма корзины
   formErrors: TFormErrors; // ошибки в форме
 }

@@ -4,16 +4,12 @@ import { ICustomer, IOrderModel, TFormErrors, IPostOrder } from "../../types";
 
 export class OrderModel extends Model<IOrderModel> implements IOrderModel {
   customer: ICustomer;
-  items: string[];
-  total: number;
   formErrors: TFormErrors;
 
   constructor(data: Partial<IOrderModel>, events: IEvents) {
     super(data, events);
 
     this.customer = data?.customer ?? { payment: '', address: '', email: '', phone: '' };
-    this.items = data?.items ?? [];
-    this.total = data?.total ?? 0;
     this.formErrors = data?.formErrors ?? {};
   }
 
@@ -57,27 +53,15 @@ export class OrderModel extends Model<IOrderModel> implements IOrderModel {
 
   clearCustomerData(): void {
     this.customer = { payment: '', address: '', email: '', phone: '' };
-    this.items = [];
-    this.total = 0;
     this.formErrors = {};
     this.emitChanges('order:customer:cleared', {});
   }
 
-  setItems(items: string[]): void {
-    this.items = [...items];
-    this.emitChanges('order:items:updated', { items: this.items });
-  }
-
-  setTotal(total: number): void {
-    this.total = total;
-    this.emitChanges('order:total:updated', { total: this.total });
-  }
-
-  getOrderData(): IPostOrder {
+  getOrderData(items: string[], total: number): IPostOrder {
     const order: IPostOrder = {
       ...this.customer,
-      items: [...this.items],
-      total: this.total
+      items: [...items],
+      total: total
     };
 
     this.emitChanges('order:data:ready', { order });

@@ -191,7 +191,6 @@ export type TFormErrors = Partial<Record<keyof TFormOrder | keyof TFormContacts,
 В полях класса хранятся следующие данные:
 - customer: ICustomer - все данные покупателя в соответствии с интерфейсом ICustomer
 - events: IEvents - экземпляр класса EventEmitter для инициации событий при изменении данных
-- total: number - общая сумма заказа
 - formErrors: TFormErrors - тип для хранения ошибок в формах
 
 Набор методов для взаимодействия с этими данными:
